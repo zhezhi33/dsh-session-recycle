@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-recycle",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "DSH 会话清理插件：在工作区会话上右键或从侧栏底部入口打开清理面板，左栏多选会话、顶部可勾选是否连同文件产物一起删除，删除前二次确认，误删可从回收站恢复。",
   "license": "MIT",
   "repository": {
