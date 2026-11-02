@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory = $true)][string]$Spec
 )
 
@@ -17,6 +17,7 @@ $winApiCode = @'
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
 [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+[DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 '@
 
 try {
@@ -40,7 +41,7 @@ function Wait-ExplorerWindow([string]$dir, [int]$timeoutMs) {
   while ((Get-Date) -lt $deadline) {
     $w = Get-ExplorerWindow $dir
     if ($w) { return $w }
-    Start-Sleep -Milliseconds 200
+    Start-Sleep -Milliseconds 50
   }
   return $null
 }
@@ -49,9 +50,13 @@ function Show-ExplorerWindow($win) {
   try {
     $h = [IntPtr][int64]$win.HWND
     if ($h -eq [IntPtr]::Zero) { return $false }
-    [void][DshReveal.Win]::ShowWindow($h, 9)   # SW_RESTORE
+    [void][DshReveal.Win]::ShowWindow($h, 9)   # SW_RESTORE，最小化的也能拉回来
     [void][DshReveal.Win]::BringWindowToTop($h)
-    return [DshReveal.Win]::SetForegroundWindow($h)
+    if ([DshReveal.Win]::SetForegroundWindow($h)) { return $true }
+    # SetForegroundWindow 常被前台锁拦下，SwitchToThisWindow 能绕过
+    [DshReveal.Win]::SwitchToThisWindow($h, $true)
+    Start-Sleep -Milliseconds 80
+    return $true
   } catch { return $false }
 }
 
@@ -63,7 +68,7 @@ function Wait-ItemsReady($win, [int]$timeoutMs) {
   $deadline = (Get-Date).AddMilliseconds($timeoutMs)
   while ((Get-Date) -lt $deadline) {
     if ((Get-ItemCount $win) -gt 0) { return $true }
-    Start-Sleep -Milliseconds 200
+    Start-Sleep -Milliseconds 50
   }
   return ((Get-ItemCount $win) -gt 0)
 }
@@ -97,42 +102,40 @@ foreach ($n in @($cfg.names)) {
 if ($want.Count -eq 0) { exit 0 }
 
 # ── 1. 拿到一个可见的前台窗口 ──
+# 只有两种结局：复用已有的并成功提到前台，或者新开一个。
+# 不要"复用失败后再补开一个"——那会让窗口越点越多。
 $win = Get-ExplorerWindow $target
 if ($win) {
   if (-not (Show-ExplorerWindow $win)) {
-    # 抢不到前台（前台锁 / 最小化 / 别的程序占着），新开一个，保证看得见
-    $win = Open-NewWindow $target
+    $win = $null   # 抢不到前台就不复用了，下面统一新开
   }
-} else {
+}
+if (-not $win) {
   $win = Open-NewWindow $target
 }
 if (-not $win) { exit 1 }
 
-# 新开的窗口可能不是第一个匹配到的，再确认一次最新的那个在前台
-if (-not (Show-ExplorerWindow $win)) { [void](Open-NewWindow $target) }
-
 # ── 2. 等列表项加载完 ──
-if (-not (Wait-ItemsReady $win 8000)) { exit 1 }
+if (-not (Wait-ItemsReady $win 4000)) { exit 1 }
 
 $folder = (New-Object -ComObject Shell.Application).Namespace($target)
 if (-not $folder) { exit 1 }
 
 # ── 3. 选中：先清空，再逐个选，最后校验，不够重来 ──
-for ($attempt = 1; $attempt -le 3; $attempt++) {
+for ($attempt = 1; $attempt -le 2; $attempt++) {
   Clear-Selection $win
-  Start-Sleep -Milliseconds 150
+  Start-Sleep -Milliseconds 50
 
   $hit = 0
   foreach ($item in $folder.Items()) {
     if ($want.ContainsKey($item.Name.ToLower())) {
       try { $win.Document.SelectItem($item, 1) } catch { }
       $hit++
-      Start-Sleep -Milliseconds 15
       if ($hit -ge 500) { break }
     }
   }
 
-  Start-Sleep -Milliseconds 300
+  Start-Sleep -Milliseconds 120
   $selected = 0
   try { $selected = @($win.Document.SelectedItems()).Count } catch { $selected = 0 }
 
