@@ -4,62 +4,111 @@ param(
 
 # 打开资源管理器到一个目录，并把该目录里指定的条目多选高亮。
 # $Spec 是 UTF-8 JSON：{ "dir": "D:\\path", "names": ["a.png", "b.html"] }
-# 用文件传参而不是命令行参数，避免中文文件名在命令行编码转换时被吃掉。
+#
+# 连续点击的稳定性：
+#   - 有窗口就复用，没有就用 explorer /n 强制新开（Explore 对同一路径会被节流）
+#   - 选之前先清空当前选择，避免 SelectItem 把已选项又切回去
+#   - 等 Items 真正就绪再选，选完校验数量，不符重试
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+function Get-ExplorerWindow([string]$dir) {
+  $shell = New-Object -ComObject Shell.Application
+  $found = $null
+  foreach ($w in @($shell.Windows())) {
+    try {
+      $p = $w.Document.Folder.Self.Path
+      if ($p -and ($p.TrimEnd('\') -ieq $dir.TrimEnd('\'))) { $found = $w }
+    } catch { }
+  }
+  return $found
+}
+
+function Wait-ExplorerWindow([string]$dir, [int]$timeoutMs) {
+  $deadline = (Get-Date).AddMilliseconds($timeoutMs)
+  while ((Get-Date) -lt $deadline) {
+    $w = Get-ExplorerWindow $dir
+    if ($w) { return $w }
+    Start-Sleep -Milliseconds 200
+  }
+  return $null
+}
+
+function Get-ItemCount($win) {
+  try { return $win.Document.Folder.Items().Count } catch { return 0 }
+}
+
+function Wait-ItemsReady($win, [int]$timeoutMs) {
+  $deadline = (Get-Date).AddMilliseconds($timeoutMs)
+  while ((Get-Date) -lt $deadline) {
+    if ((Get-ItemCount $win) -gt 0) { return $true }
+    Start-Sleep -Milliseconds 200
+  }
+  return ((Get-ItemCount $win) -gt 0)
+}
+
+function Clear-Selection($win) {
+  try {
+    foreach ($s in @($win.Document.SelectedItems())) {
+      try { $win.Document.SelectItem($s, 0) } catch { }
+    }
+  } catch { }
+}
 
 try {
   $cfg = Get-Content -LiteralPath $Spec -Raw -Encoding UTF8 | ConvertFrom-Json
 } catch { exit 1 }
 if (-not $cfg -or -not $cfg.dir) { exit 1 }
-
 try { Remove-Item -LiteralPath $Spec -Force } catch { }
 
 try { $target = (Resolve-Path -LiteralPath $cfg.dir).Path } catch { exit 1 }
 if (-not (Test-Path -LiteralPath $target)) { exit 1 }
 
-$shell = New-Object -ComObject Shell.Application
-if (-not $shell) { exit 1 }
-$shell.Explore($target)
+$want = @{}
+foreach ($n in @($cfg.names)) {
+  if ($n) { $want[[string]$n.ToLower()] = $true }
+}
+if ($want.Count -eq 0) { exit 0 }
 
-# 等窗口建好（最多 ~4.5 秒）
-$win = $null
-for ($i = 0; $i -lt 30; $i++) {
-  Start-Sleep -Milliseconds 150
-  foreach ($w in $shell.Windows()) {
-    try {
-      $p = $w.Document.Folder.Self.Path
-      if ($p -and ($p.TrimEnd('\') -ieq $target.TrimEnd('\'))) { $win = $w; break }
-    } catch { }
-  }
-  if ($win) { break }
+# ── 1. 有窗口就复用，没有就新开 ──
+$win = Get-ExplorerWindow $target
+if (-not $win) {
+  Start-Process explorer.exe -ArgumentList "/n,`"$target`""
+  $win = Wait-ExplorerWindow $target 10000
 }
 if (-not $win) { exit 1 }
 
-$folder = $shell.Namespace($target)
+# ── 2. 等列表项加载完 ──
+if (-not (Wait-ItemsReady $win 8000)) { exit 1 }
+
+$folder = (New-Object -ComObject Shell.Application).Namespace($target)
 if (-not $folder) { exit 1 }
 
-$set = @{}
-foreach ($n in @($cfg.names)) {
-  if ($n) { $set[[string]$n.ToLower()] = $true }
-}
-if ($set.Count -eq 0) { exit 0 }
-
-# 命中 0 个就不动选择，免得把用户当前的选择清掉
-$hit = 0
+# ── 3. 选中（先清空，再逐个选，最后校验，不够就重来）──
+$wantCount = 0
 foreach ($item in $folder.Items()) {
-  if ($set.ContainsKey($item.Name.ToLower())) { $hit++; if ($hit -gt 500) { break } }
+  if ($want.ContainsKey($item.Name.ToLower())) { $wantCount++ }
 }
-if ($hit -eq 0) { exit 0 }
 
-# SelectItem(item, 1) = SVSI_SELECT，连续调用是累加
-$done = 0
-foreach ($item in $folder.Items()) {
-  if ($set.ContainsKey($item.Name.ToLower())) {
-    $win.Document.SelectItem($item, 1)
-    $done++
-    if ($done -ge 500) { break }
+for ($attempt = 1; $attempt -le 3; $attempt++) {
+  Clear-Selection $win
+  Start-Sleep -Milliseconds 150
+
+  $hit = 0
+  foreach ($item in $folder.Items()) {
+    if ($want.ContainsKey($item.Name.ToLower())) {
+      try { $win.Document.SelectItem($item, 1) } catch { }
+      $hit++
+      Start-Sleep -Milliseconds 15
+      if ($hit -ge 500) { break }
+    }
   }
+
+  Start-Sleep -Milliseconds 300
+  $selected = 0
+  try { $selected = @($win.Document.SelectedItems()).Count } catch { $selected = 0 }
+
+  if ($selected -ge $hit -and $hit -gt 0) { break }
 }
 
 exit 0
