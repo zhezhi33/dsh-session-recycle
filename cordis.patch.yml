@@ -1,0 +1,4 @@
+- insert:
+    - id: dsh-session-recycle
+      name: 'dsh-session-recycle'
+      config: {}
