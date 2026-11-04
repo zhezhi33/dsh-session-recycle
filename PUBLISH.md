@@ -26,7 +26,7 @@
 cd C:\Users\ZZHI\.dsh\local-plugins\dsh-session-recycle
 git init -b main
 git add .
-git commit -m "feat: dsh-session-recycle v0.2.6"
+git commit -m "feat: dsh-session-recycle v0.2.2"
 git remote add origin https://github.com/<你的用户名>/dsh-session-recycle.git
 git push -u origin main
 ```
@@ -47,8 +47,8 @@ git push -u origin main
 
 ```powershell
 # 用现成的 dist 产物
-# 把 dsh-session-recycle-0.2.6.tgz 传上去：
-gh release create v0.2.6 .\dist\dsh-session-recycle-0.2.6.tgz --title "v0.2.6" --notes "见 RELEASE.md"
+# 把 dsh-session-recycle-0.2.2.tgz 传上去：
+gh release create v0.2.2 .\dist\dsh-session-recycle-0.2.2.tgz --title "v0.2.2" --notes "见 RELEASE.md"
 ```
 
 ⚠️ 资产名带不带版本号要和 `tarball:` 字段匹配（见下）。
@@ -132,6 +132,6 @@ cordis.patch.yml    ✅
 screenshots.json    ✅ 指向 assets/screenshot-1.png
 assets/screenshot-1.png   ✅ 真实界面截图
 README.md           完整功能与实现说明
-RELEASE.md          v0.2.6 发布说明
+RELEASE.md          v0.2.2 发布说明
 lib/reveal.ps1      打开文件目录的高亮脚本（必须一起提交）
 ```
