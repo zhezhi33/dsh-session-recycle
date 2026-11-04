@@ -66,7 +66,7 @@ DeepSeek Harness 的会话清理插件：把不要的对话搬进可恢复的回
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-3. 看到「安装成功，版本 0.2.6」后，**完全退出 DeepSeek Harness 再打开**
+3. 看到「安装成功，版本 0.2.9」后，**完全退出 DeepSeek Harness 再打开**
 
 脚本会自动：定位 `DSH_HOME` → 挑 profile（`desktop` 优先，其次 `web`）→ 找 DSH 自带的 node/pnpm →
 备份 `package.json` → 登记 `dependencies` 与 `dsh.profile.bundles` → 跑 `pnpm install` → 校验版本。
