@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zhezhi33/dsh-session-recycle.git"
+    "url": "https://github.com/zhezhi33/dsh-session-recycler.git"
   },
   "keywords": ["dsh", "dsh-plugin", "session", "cleanup", "recycle-bin"],
   "type": "module",
