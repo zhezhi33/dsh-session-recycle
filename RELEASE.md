@@ -1,44 +1,44 @@
-dsh-session-recycler v0.2.2 发布说明
+dsh-session-recycler v0.2.3 发布说明
 =====================================
 
-DSH 会话管理插件：回收站恢复、整条对话树清理、产物识别与资源管理器高亮。
+本版只做地址迁移，插件功能没有任何变化。
 
-本版更新
---------
+1. GitHub 仓库改名
+   - dsh-session-recycle → dsh-session-recycler
+   - 旧地址继续可用（GitHub 301 跳转）
+   - 面板头部的「项目主页」图标、package.json 的 repository 字段都指向新地址
 
-1. 待清理页：工作区分组可折叠
-   - 组标题整行可点，▾ 箭头指示展开状态，收起后只留一行组头。
-   - 组头显示该组会话数与「已选 N」；「全选本组」在收起状态下仍可用，不必展开。
-   - 键盘 Enter / 空格同样能切换折叠。
+2. npm 地址更新
+   - 包名仍是 dsh-session-recycler
+   - 本版把包元数据里的 repository 字段改成了新仓库地址，
+     npm 页面上的「Repository」链接不再指向旧名
 
-2. 回收站页：勾选与批量删除
-   - 与待清理页一致的交互：搜索框、全选、逐条勾选，行内保留「恢复」与「彻底删除」。
-   - 底部新增红色「全部删除」，作用于勾选的会话，点击后走二次确认，确认框写明会话数与不可恢复。
-   - 底部左侧同步显示「已选 N 个会话 · 共 X」。
+3. 插件商店条目改名
+   - 市场条目从 zhezhi33__dsh-session-recycle.yml 改为 zhezhi33__dsh-session-recycler.yml
+   - 安装地址（tarball）指向本版 dsh-session-recycler-0.2.3.tgz
 
-3. 「同时删除文件产物」下移
-   - 从面板右上角挪到回收站页底部，与「全部删除」并排，说明文字放在勾选框下方。
-   - 产物识别跟随回收站页的勾选实时更新，只扫勾选的会话。
+升级
+----
 
-4. 页签切换更安全
-   - 待清理页与回收站页各自独立的勾选集合，切页即清空，不会把一页的选择带到另一页去删。
+重新安装即可覆盖旧版：回收站里已有的会话、面板设置（打开方式）都不受影响。
+插件数据目录仍沿用 %DSH_HOME%\dsh-session-recycle\，不会因为改名丢失历史回收站内容。
 
 安装
 ----
 
-解压后在该目录执行：
+解压后双击：
 
-  .\install.ps1
+  一键安装-纯PowerShell.cmd
 
-脚本策略阻止时执行：
+只检查不安装：
 
-  powershell -ExecutionPolicy Bypass -File .\install.ps1
+  一键安装-纯PowerShell.cmd --check
 
-安装后完全退出 DeepSeek Harness 再启动，使服务端加载新版本。
+安装后完全退出 DeepSeek Harness 再启动。
 
 本版限制
 --------
 
-- 仅支持 Windows（依赖 explorer.exe 与 Shell COM）。
-- 多窗口模式逐目录高亮。标签页模式因焦点自动化有误触风险，已禁用。
-- mtime 兜底只扫描会话工作区，忽略依赖目录，并受扫描深度、时长、数量和文件大小上限约束。
+- 仅支持 Windows（依赖 explorer.exe 与 Shell COM）
+- 多窗口模式逐目录高亮；标签页模式因焦点自动化风险已禁用
+- 产物识别依赖对话正文里的路径文本 + 工作区 mtime 兜底，纯命令行 cd 后的相对写入仍可能漏
