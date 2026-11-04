@@ -1,4 +1,4 @@
-# dsh-session-recycle
+# dsh-session-recycler
 
 **English** | [中文](README.md)
 
@@ -98,7 +98,7 @@ each group. It can be pasted anywhere: search boxes, scripts, another conversati
 ### From the package (recommended)
 
 1. Quit DeepSeek Harness completely (right-click the tray icon; closing the window is not enough)
-2. Unpack `dsh-session-recycle-<version>.zip` and double-click `一键安装-纯PowerShell.cmd`
+2. Unpack `dsh-session-recycler-<version>.zip` and double-click `一键安装-纯PowerShell.cmd`
 3. After **Install complete**, reopen DeepSeek Harness; a **Session management** entry appears at the
    bottom of the sidebar
 
@@ -116,7 +116,7 @@ To inspect before touching anything, pass a flag to the `.cmd`:
 ```
 
 The installer touches exactly two things: it copies the plugin into
-`<profile>\node_modules\dsh-session-recycle\`, and it registers one dependency plus one bundle entry
+`<profile>\node_modules\dsh-session-recycler\`, and it registers one dependency plus one bundle entry
 in `<profile>\package.json`, which it backs up as `package.json.bak-<timestamp>` first.
 
 ### Uninstall
@@ -124,21 +124,21 @@ in `<profile>\package.json`, which it backs up as `package.json.bak-<timestamp>`
 Double-click `一键卸载-纯PowerShell.cmd`, or run:
 
 ```powershell
-.\install-dsh-session-recycle-native.ps1 --uninstall
+.\install-dsh-session-recycler-native.ps1 --uninstall
 ```
 
 It removes the copy under `node_modules` and drops the two entries from `package.json`.
 Conversations already moved to the recycle bin are untouched; they live under
-`%USERPROFILE%\.dsh\dsh-session-recycle\` if you want them gone too.
+`%USERPROFILE%\.dsh\dsh-session-recycler\` if you want them gone too.
 
 ### Development mode
 
-Put the source under `<DSH_HOME>\local-plugins\dsh-session-recycle` and register it in the profile's
+Put the source under `<DSH_HOME>\local-plugins\dsh-session-recycler` and register it in the profile's
 `package.json`:
 
 ```json
-"dependencies": { "dsh-session-recycle": "link:C:/Users/<you>/.dsh/local-plugins/dsh-session-recycle" }
-"dsh": { "profile": { "bundles": ["...", "dsh-session-recycle"] } }
+"dependencies": { "dsh-session-recycler": "link:C:/Users/<you>/.dsh/local-plugins/dsh-session-recycler" }
+"dsh": { "profile": { "bundles": ["...", "dsh-session-recycler"] } }
 ```
 
 The `link:` entry is a symlink, so restarting DSH is enough — no reinstall needed.

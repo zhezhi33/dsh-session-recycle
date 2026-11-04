@@ -1,4 +1,4 @@
-# dsh-session-recycle
+# dsh-session-recycler
 
 [English](README.en.md) | **中文**
 
@@ -83,7 +83,7 @@ DeepSeek Harness 的会话管理插件，只支持 Windows。
 ### 用安装包（推荐）
 
 1. 完全退出 DeepSeek Harness（托盘图标右键退出，只关窗口不算）
-2. 解压 `dsh-session-recycle-<版本>.zip`，双击 `一键安装-纯PowerShell.cmd`
+2. 解压 `dsh-session-recycler-<版本>.zip`，双击 `一键安装-纯PowerShell.cmd`
 3. 看到「安装完成」后重新打开 DeepSeek Harness，侧栏底部出现「会话管理」即成功
 
 不需要联网，不需要管理员权限，不用自己装 Node 或 npm，只用 Windows 自带的 PowerShell 5.1。
@@ -98,7 +98,7 @@ DeepSeek Harness 的会话管理插件，只支持 Windows。
 一键安装-纯PowerShell.cmd --home D:\dsh-home 数据目录不在默认位置时指定
 ```
 
-安装器只碰两样东西：把插件文件复制进 `<profile>\node_modules\dsh-session-recycle\`，
+安装器只碰两样东西：把插件文件复制进 `<profile>\node_modules\dsh-session-recycler\`，
 以及在 `<profile>\package.json` 里登记一条依赖和一个 bundle 声明；
 改 package.json 之前会备份成 `package.json.bak-<时间戳>`。
 
@@ -107,19 +107,19 @@ DeepSeek Harness 的会话管理插件，只支持 Windows。
 双击 `一键卸载-纯PowerShell.cmd`，或：
 
 ```powershell
-.\install-dsh-session-recycle-native.ps1 --uninstall
+.\install-dsh-session-recycler-native.ps1 --uninstall
 ```
 
 会删掉 `node_modules` 里那份插件，并撤掉 `package.json` 里加过的两条登记。
-回收站里已删的会话不会被删，它们在 `%USERPROFILE%\.dsh\dsh-session-recycle\` 下，要清就手工删。
+回收站里已删的会话不会被删，它们在 `%USERPROFILE%\.dsh\dsh-session-recycler\` 下，要清就手工删。
 
 ### 开发模式
 
-把源码放到 `<DSH_HOME>\local-plugins\dsh-session-recycle`，在 profile 的 `package.json` 里登记：
+把源码放到 `<DSH_HOME>\local-plugins\dsh-session-recycler`，在 profile 的 `package.json` 里登记：
 
 ```json
-"dependencies": { "dsh-session-recycle": "link:C:/Users/<you>/.dsh/local-plugins/dsh-session-recycle" }
-"dsh": { "profile": { "bundles": ["...", "dsh-session-recycle"] } }
+"dependencies": { "dsh-session-recycler": "link:C:/Users/<you>/.dsh/local-plugins/dsh-session-recycler" }
+"dsh": { "profile": { "bundles": ["...", "dsh-session-recycler"] } }
 ```
 
 `link:` 是软链，改完重启 DSH 即生效，不用重跑安装。
