@@ -1,4 +1,4 @@
-dsh-session-recycler v0.2.3 发布说明
+dsh-session-recycler v0.2.4 发布说明
 =====================================
 
 本版只做地址迁移，插件功能没有任何变化。
@@ -15,7 +15,7 @@ dsh-session-recycler v0.2.3 发布说明
 
 3. 插件商店条目改名
    - 市场条目从 zhezhi33__dsh-session-recycle.yml 改为 zhezhi33__dsh-session-recycler.yml
-   - 安装地址（tarball）指向本版 dsh-session-recycler-0.2.3.tgz
+   - 安装地址（tarball）指向本版 dsh-session-recycler-0.2.4.tgz
 
 升级
 ----

@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-recycler",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "DSH 会话管理插件：回收站恢复、子代理树清理、会话产物扫描与高亮、文件用途查询。",
   "license": "MIT",
   "repository": {
