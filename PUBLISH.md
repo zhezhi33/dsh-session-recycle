@@ -23,11 +23,11 @@
 ## 第一步：建仓库并推送
 
 ```powershell
-cd C:\Users\ZZHI\.dsh\local-plugins\dsh-session-recycle
+cd C:\Users\ZZHI\.dsh\local-plugins\dsh-session-recycler
 git init -b main
 git add .
-git commit -m "feat: dsh-session-recycle v0.2.2"
-git remote add origin https://github.com/<你的用户名>/dsh-session-recycle.git
+git commit -m "feat: dsh-session-recycler <版本>"
+git remote add origin https://github.com/<你的用户名>/dsh-session-recycler.git
 git push -u origin main
 ```
 
@@ -47,8 +47,8 @@ git push -u origin main
 
 ```powershell
 # 用现成的 dist 产物
-# 把 dsh-session-recycle-0.2.2.tgz 传上去：
-gh release create v0.2.2 .\dist\dsh-session-recycle-0.2.2.tgz --title "v0.2.2" --notes "见 RELEASE.md"
+# 把 dsh-session-recycler-<版本>.tgz 传上去：
+gh release create v<版本> .\dist\dsh-session-recycler-<版本>.tgz --title "v<版本>" --notes "见 RELEASE.md"
 ```
 
 ⚠️ 资产名带不带版本号要和 `tarball:` 字段匹配（见下）。
@@ -66,17 +66,17 @@ npm publish
 ## 第三步：提 PR
 
 Fork [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)，
-新增**一个文件**：`data/plugins/<用户名>__dsh-session-recycle.yml`
+新增**一个文件**：`data/plugins/<用户名>__dsh-session-recycler.yml`
 
 ```yaml
-url: https://github.com/<你的用户名>/dsh-session-recycle
-name: <你的用户名>/dsh-session-recycle
+url: https://github.com/<你的用户名>/dsh-session-recycler
+name: <你的用户名>/dsh-session-recycler
 category: session
 description:
   en: Move DSH sessions to a recoverable recycle bin, purge them together with their subagent trees, and reveal the files a conversation produced in Explorer.
   zh: 把 DSH 会话移入可恢复的回收站，彻底删除时连带子代理树与缓存，并能在资源管理器里高亮该对话产出的文件。
 # 可选：预构建包（发了 GitHub Release 再填）
-# tarball: https://github.com/<你的用户名>/dsh-session-recycle/releases/latest/download/dsh-session-recycle.tgz
+# tarball: https://github.com/<你的用户名>/dsh-session-recycler/releases/latest/download/dsh-session-recycler.tgz
 ```
 
 注意：
@@ -132,6 +132,6 @@ cordis.patch.yml    ✅
 screenshots.json    ✅ 指向 assets/screenshot-1.png
 assets/screenshot-1.png   ✅ 真实界面截图
 README.md           完整功能与实现说明
-RELEASE.md          v0.2.2 发布说明
+RELEASE.md          发布说明
 lib/reveal.ps1      打开文件目录的高亮脚本（必须一起提交）
 ```

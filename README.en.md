@@ -4,16 +4,19 @@
 
 A session manager plugin for DeepSeek Harness. Windows only.
 
-It handles two things DSH itself leaves alone: **deleting a conversation never cleans up fully**,
-and **there is no way to tell which files a conversation actually touched**.
+Deleting a conversation in DSH usually removes just the row in the sidebar, and there is no way to
+tell which files that conversation actually touched. This plugin covers both:
 
-- Deletion happens in two stages. A conversation first moves into the plugin's own recycle bin and
-  can be restored to its original sidebar slot; only when you are sure does it get purged, together
-  with its whole subagent tree, sidebar ledger rows, projection cache, the log lines that mention it,
-  and the attachment objects only it referenced.
-- Produced files can be traced back. Right-click a conversation to scan the files it actually wrote
-  and select them in Explorer, copy the full path list to the clipboard, or hand the list to the
-  assistant to judge which files are safe to delete.
+- **Deletes completely** — deletion has two stages: the conversation first moves into the plugin's own
+  recycle bin and can be restored to its original sidebar slot; only when you are sure does it get
+  purged, together with its whole subagent tree, sidebar ledger rows, projection cache, the log lines
+  that mention it, the attachment objects only it referenced, and any directories left empty.
+- **Deletes safely** — before touching anything it checks that the conversation has stopped writing
+  (if it is still writing, the whole batch is refused), then validates each target; anything that
+  resolves to a drive root, the system directories or DSH's own data directory is skipped.
+- **Explains what happened** — right-click a conversation to scan the files it actually wrote
+  (including the throwaway scripts it put outside the workspace), multi-select them in Explorer, or
+  hand the full path list to the assistant to judge what is safe to delete.
 
 ---
 
@@ -32,23 +35,37 @@ When a workspace ends up with no sessions left, its registration is deleted too,
 not keep an empty group. If the registration is gone at restore time, it is recreated from the
 recorded path and the conversation still lands in its original slot.
 
+Three gates guard every deletion:
+
+1. **Quiet check** — the session log is stat'ed twice, 240 ms apart. If the size or mtime still
+   changes, the turn has not finished: the deletion is refused with an explanation. The check covers
+   the entire subagent tree, not just the root conversation.
+2. **Batch pre-flight** — when several conversations are selected, one bad entry (still writing,
+   missing, already in the trash, not in the trash) refuses the whole batch. Nothing is touched, and
+   the panel names the offending conversation and the reason.
+3. **Scope fence** — produced files that resolve to a drive root (`D:\`), `SystemRoot`,
+   `Program Files`, `ProgramData` or DSH's data directory are skipped, and the failure is reported
+   honestly rather than hidden.
+
 ### 2. Session management panel
 
-Two entry points: the **Session management** button at the bottom of the sidebar, and
-**Move to recycle bin** in a conversation's context menu.
+Two entry points: the **Session management** button at the bottom of the sidebar, and **Move to
+recycle bin** in a conversation's context menu.
 
 - Conversations are grouped by workspace; group headers collapse and expand, and Enter / Space work too
 - Search filters by title or workspace path; **Select all** applies to the filtered list,
   **Select group** only to that group
-- Each row shows size, last activity, subagent count and workspace path
-- Deletion always asks for confirmation, listing session count, artifact count and total size
-- **Recycle bin** tab: the same search / select-all / per-row checkbox behaviour, with per-row
-  **Restore** and **Purge**
-- Bottom of the recycle bin tab: **Also delete produced files** deletes the files a session created
-  during a purge, with a preview list; the red **Delete all** acts on the selected rows behind the
-  same confirmation
-- Selections in the two tabs are independent and reset when you switch, so one page's selection
-  never leaks into a deletion on the other
+- Each row is two lines: title, then size · last activity · subagent count. The
+  **File information** entry only shows up on hover or selection, keeping the list quiet
+- Two tabs (pending / recycle bin) switch with an underline and each carries its own count;
+  selections are independent and reset when you switch tabs
+- The footer is a single line: selected count and total size on the left, the actions for that step on
+  the right
+- On the recycle bin tab, **Also delete produced files** sits in that same line; the scan result is a
+  small clickable label (`3 files · 1.2 MB`) that expands into the list only when asked
+- After a deletion the plugin reports exactly what happened: how many files were removed, how many
+  failed, how many empty directories were cleaned. When nothing was found it says so, instead of
+  letting you believe everything is gone
 
 ### 3. Open file folder
 
@@ -69,10 +86,14 @@ What counts as a produced file:
 | Source | Counted |
 |---|---|
 | `file_path` from `write` / `edit` tool calls | ✅ |
-| Write targets on the command line: `>` `>>` redirection, `Set-Content` / `Out-File`, `Copy-Item` / `Move-Item` destinations, `tar -czf` output | ✅ |
+| Write targets on the command line: `>` `>>` redirection, `Set-Content` / `Out-File`, `New-Item -Path`, `Copy-Item` / `Move-Item` destinations, `tar -czf` output | ✅ |
 | Files changed inside the workspace during the session (mtime fallback) | ✅ |
+| Paths written **outside the workspace** (for example the `D:\buildtmp\verify-*.ps1` a session wrote for itself) | ✅ listed and deleted, subject to the scope fence above |
 | Files opened by `read` / `grep` / `read_image` | ❌ reference only |
 | Paths merely mentioned in the conversation text | ❌ |
+
+Produced files outside the workspace are only recognised when the full path appears in the
+conversation body; the mtime fallback only scans the workspace.
 
 ### 4. File query
 
@@ -163,22 +184,32 @@ The `link:` entry is a symlink, so restarting DSH is enough — no reinstall nee
   `registry.create(path)` before attaching.
 - **Restoring to the original slot** needs more than `entity.attachSession(id)`, which prepends:
   `insertSessionBefore(id, anchor)` puts it back, using the conversation that used to follow it.
+- **Trash entries record `createdAt` too.** The mtime fallback on the purge path is anchored to it;
+  entries written by earlier versions lack the field, so it is read back from the member headers at
+  deletion time instead of silently collapsing the window to zero.
+- **Attachment cleanup computes before it deletes.** The sha256 values in the doomed conversations are
+  collected first, then the still-live references are computed (active sessions plus every other
+  entry still sitting in the trash); only the difference may be removed. Doing it in the opposite
+  order deletes attachments belonging to conversations that are still restorable.
 - **Artifact detection** extracts path fragments from the body with regexes (the whole string does not
   have to be a path), then falls back to scanning the workspace by session time. Only regular files
-  inside `cwd` that really exist, outside `node_modules`/`.git`/`dist`, not project config files, and
-  with extensions outside the log/cache blacklist are kept.
+  that really exist, outside `node_modules`/`.git`/`dist`, not project config files, and with
+  extensions outside the log/cache blacklist are kept.
 - **Explorer multi-select** goes through Shell COM: `$win.Document.SelectItem($item, 1)`, and repeated
   calls accumulate. File names cannot travel as command-line arguments (Chinese gets mangled by the
   encoding), so they are passed in a UTF-8 JSON file; the child process must not be `detached`, or
-  PowerShell exit early and no window ever appears.
+  PowerShell exits early and no window ever appears.
 
 ---
 
 ## Known limitations
 
 - Only verified on Windows (depends on `explorer.exe` and Shell COM).
-- Artifact detection relies on path text in the body plus a workspace mtime fallback; relative writes
-  after a plain `cd` on the command line can still be missed.
+- Produced files outside the workspace are only recognised when the conversation body writes out the
+  full path; relative writes after a `cd` on the command line can still be missed.
+- Empty-directory cleanup walks at most three levels up; deeper empty shells are left behind.
+- Scheduled tasks attached to a conversation are not deleted with it; remove them under
+  Settings → Scheduled tasks.
 - Tab mode is disabled: Windows Explorer cannot guarantee automated focus safety, and a mistyped
   keystroke can rename a file.
 - It only runs inside DSH and depends on the host-provided `react` and
